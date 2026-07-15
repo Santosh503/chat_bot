@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Burgers House — Order Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;0,900;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --char:#241b15;
+    --char-2:#332619;
+    --patty:#a8402c;
+    --patty-dark:#8a3323;
+    --mustard:#d9a441;
+    --cream:#fbf3e4;
+    --paper:#fffaf0;
+    --sage:#6b8f5e;
+    --slate:#6b6259;
+    --line: rgba(36,27,21,0.12);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(217,164,65,0.10), transparent 60%),
+      radial-gradient(1000px 700px at 100% 110%, rgba(168,64,44,0.08), transparent 55%),
+      var(--cream);
+    font-family:'Inter', sans-serif;
+    color:var(--char);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    height:min(760px, 92vh);
+    background:var(--paper);
+    border-radius:22px;
+    box-shadow: 0 30px 60px -20px rgba(36,27,21,0.35), 0 2px 0 rgba(36,27,21,0.04);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+
+  /* ---------- Header / marquee ---------- */
+  .marquee{
+    background: linear-gradient(180deg, var(--char) 0%, var(--char-2) 100%);
+    color:var(--cream);
+    padding:18px 20px 16px;
+    position:relative;
+    flex-shrink:0;
+  }
+  .marquee-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand-badge{
+    width:38px;height:38px;
+    border-radius:10px;
+    background: linear-gradient(160deg, var(--mustard), var(--patty));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces', serif;
+    font-weight:900;
+    font-size:18px;
+    color:var(--char);
+    flex-shrink:0;
+  }
+  .brand-text h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:17px;
+    letter-spacing:0.02em;
+    margin:0;
+    line-height:1.1;
+  }
+  .brand-text p{
+    margin:2px 0 0;
+    font-size:11.5px;
+    color:rgba(251,243,228,0.6);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .status{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:11.5px;
+    color:rgba(251,243,228,0.85);
+    letter-spacing:0.03em;
+  }
+  .bulb{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--sage);
+    box-shadow:0 0 0 3px rgba(107,143,94,0.22);
+    animation: flicker 2.6s ease-in-out infinite;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    50%{opacity:0.45;}
+  }
+  .marquee-lights{
+    display:flex;
+    gap:5px;
+    margin-top:14px;
+  }
+  .marquee-lights span{
+    height:2px;
+    flex:1;
+    background:rgba(217,164,65,0.35);
+    border-radius:2px;
+  }
+  .marquee-lights span:nth-child(odd){
+    background:rgba(217,164,65,0.7);
+  }
+
+  /* ---------- Messages ---------- */
+  .thread{
+    flex:1;
+    overflow-y:auto;
+    padding:20px 16px 8px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    scroll-behavior:smooth;
+  }
+  .thread::-webkit-scrollbar{width:6px;}
+  .thread::-webkit-scrollbar-thumb{background:rgba(36,27,21,0.15);border-radius:10px;}
+
+  .row{display:flex; max-width:88%;}
+  .row.bot{align-self:flex-start;}
+  .row.user{align-self:flex-end; margin-left:auto;}
+
+  .bubble{
+    position:relative;
+    padding:11px 14px 13px;
+    font-size:14px;
+    line-height:1.5;
+    border-radius:var(--radius);
+  }
+  .row.bot .bubble{
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--char);
+    border-bottom-left-radius:4px;
+  }
+  .row.user .bubble{
+    background:var(--char);
+    color:var(--cream);
+    border-bottom-right-radius:4px;
+  }
+  /* ticket perforation — signature detail */
+  .row.bot .bubble::after{
+    content:"";
+    position:absolute;
+    left:14px; right:14px; bottom:0;
+    height:1px;
+    background-image: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 8px);
+    opacity:0.9;
+  }
+  .meta{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.02em;
+    margin-top:5px;
+    opacity:0.55;
+  }
+  .row.user .meta{color:var(--cream);}
+
+  .menu-card{
+    margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .menu-item{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 0;
+    border-top:1px dashed var(--line);
+    font-size:13.5px;
+  }
+  .menu-item:first-child{border-top:none;}
+  .menu-item .name{font-weight:600;}
+  .menu-item .desc{display:block; font-weight:400; color:var(--slate); font-size:12px; margin-top:1px;}
+  .menu-item .price{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600;
+    color:var(--patty);
+    white-space:nowrap;
+  }
+
+  .quick-replies{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:2px;
+    padding:0 16px 14px;
+    flex-shrink:0;
+  }
+  .chip{
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--char);
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 13px;
+    border-radius:100px;
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .chip:hover{
+    background:var(--mustard);
+    border-color:var(--mustard);
+    color:var(--char);
+    transform:translateY(-1px);
+  }
+
+  .typing{
+    display:flex;
+    gap:4px;
+    padding:14px 16px;
+  }
+  .typing span{
+    width:6px;height:6px;border-radius:50%;
+    background: var(--slate);
+    opacity:0.4;
+    animation: bounce 1.1s infinite ease-in-out;
+  }
+  .typing span:nth-child(2){animation-delay:0.15s;}
+  .typing span:nth-child(3){animation-delay:0.3s;}
+  @keyframes bounce{
+    0%,60%,100%{transform:translateY(0); opacity:0.35;}
+    30%{transform:translateY(-4px); opacity:0.9;}
+  }
+
+  /* ---------- Composer ---------- */
+  .composer{
+    border-top:1px solid var(--line);
+    padding:12px 14px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    background:#fff;
+    flex-shrink:0;
+  }
+  .composer input{
+    flex:1;
+    border:1px solid var(--line);
+    background:var(--cream);
+    border-radius:100px;
+    padding:11px 16px;
+    font-size:14px;
+    font-family:'Inter', sans-serif;
+    color:var(--char);
+    outline:none;
+  }
+  .composer input::placeholder{color:var(--slate); opacity:0.7;}
+  .composer input:focus{border-color:var(--mustard); box-shadow:0 0 0 3px rgba(217,164,65,0.18);}
+  .send-btn{
+    width:42px;height:42px;
+    border-radius:50%;
+    border:none;
+    background:var(--patty);
+    color:var(--cream);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .send-btn:hover{background:var(--patty-dark);}
+  .send-btn:active{transform:scale(0.94);}
+  .send-btn:focus-visible, .chip:focus-visible, .composer input:focus-visible{
+    outline:2px solid var(--patty);
+    outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .bulb, .typing span{animation:none;}
+  }
+
+  @media (max-width: 400px){
+    .app{border-radius:0; height:100vh; max-width:100%;}
+    body{padding:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app" role="application" aria-label="Burgers House order assistant">
+  <header class="marquee">
+    <div class="marquee-top">
+      <div class="brand">
+        <div class="brand-badge">BH</div>
+        <div class="brand-text">
+          <h1>Burgers House</h1>
+          <p>Order Assistant</p>
+        </div>
+      </div>
+      <div class="status"><span class="bulb"></span> <span id="status-text">Open now</span></div>
+    </div>
+    <div class="marquee-lights" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </header>
+
+  <div class="thread" id="thread" aria-live="polite"></div>
+  <div class="quick-replies" id="quick-replies"></div>
+
+  <form class="composer" id="composer">
+    <input type="text" id="input" placeholder="Type your message…" autocomplete="off" aria-label="Message" />
+    <button type="submit" class="send-btn" aria-label="Send message">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L20.5 3L12 20.5L10 13.5L3 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+    </button>
+  </form>
+</div>
+
+<script>
+(function(){
+  const thread = document.getElementById('thread');
+  const quickReplies = document.getElementById('quick-replies');
+  const form = document.getElementById('composer');
+  const input = document.getElementById('input');
+
+  const MENU = {
+    burgers: [
+      {name:"Classic Smash", desc:"Beef patty, cheddar, lettuce, house sauce", price:8.50},
+      {name:"Double Trouble", desc:"Double patty, double cheddar, grilled onions", price:11.90},
+      {name:"BBQ Bacon Stack", desc:"Beef patty, bacon, cheddar, BBQ, crispy onions", price:10.50},
+      {name:"Spicy Jalapeño", desc:"Beef patty, pepper jack, jalapeños, chipotle mayo", price:9.90},
+      {name:"Veggie Garden", desc:"Plant-based patty, avocado, sprouts, vegan aioli", price:9.50},
+      {name:"Mushroom Swiss", desc:"Beef patty, swiss, sautéed mushrooms, truffle mayo", price:10.90},
+    ],
+    sides: [
+      {name:"Fries", desc:"Hand-cut, sea salt", price:3.50},
+      {name:"Onion Rings", desc:"Beer-battered", price:4.20},
+      {name:"Sweet Potato Fries", desc:"With chipotle dip", price:4.50},
+    ],
+    drinks: [
+      {name:"Soda", desc:"Fountain, free refill", price:2.50},
+      {name:"Milkshake", desc:"Vanilla, chocolate or strawberry", price:5.00},
+      {name:"Craft Beer", desc:"Rotating local selection", price:6.00},
+    ]
+  };
+
+  const LOCATIONS = [
+    {area:"Downtown", address:"124 Grill Street, Kathmandu", phone:"+977-1-455-0192"},
+    {area:"Lakeside", address:"9 Riverside Road, Pokhara", phone:"+977-61-402-887"},
+  ];
+
+  const HOURS = [
+    ["Mon – Thu", "11:00 AM – 10:00 PM"],
+    ["Fri – Sat", "11:00 AM – 11:00 PM"],
+    ["Sun", "12:00 PM – 9:00 PM"],
+  ];
+
+  // ---- conversation state for the order flow ----
+  let state = { step: 'idle', order: {} };
+
+  function timeNow(){
+    return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function scrollDown(){
+    requestAnimationFrame(()=>{ thread.scrollTop = thread.scrollHeight; });
+  }
+
+  function addMessage(text, sender, extraHTML){
+    const row = document.createElement('div');
+    row.className = 'row ' + sender;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = escapeHTML(text) + (extraHTML || '');
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = (sender === 'bot' ? 'Burgers House · ' : 'You · ') + timeNow();
+    bubble.appendChild(meta);
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    scrollDown();
+  }
+
+  function escapeHTML(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML.replace(/\n/g,'<br>');
+  }
+
+  function showTyping(callback, delay){
+    const row = document.createElement('div');
+    row.className = 'row bot';
+    row.id = 'typing-row';
+    row.innerHTML = '<div class="bubble typing"><span></span><span></span><span></span></div>';
+    thread.appendChild(row);
+    scrollDown();
+    setTimeout(()=>{
+      const t = document.getElementById('typing-row');
+      if(t) t.remove();
+      callback();
+    }, delay || 550);
+  }
+
+  function setQuickReplies(options){
+    quickReplies.innerHTML = '';
+    options.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.type = 'button';
+      btn.textContent = opt;
+      btn.addEventListener('click', ()=> handleUserInput(opt));
+      quickReplies.appendChild(btn);
+    });
+  }
+
+  function money(n){ return '$' + n.toFixed(2); }
+
+  function menuHTML(){
+    function section(title, items){
+      return '<div style="margin-top:10px; font-family:\'Fraunces\',serif; font-weight:700; font-size:12.5px; letter-spacing:0.03em; text-transform:uppercase; color:var(--patty);">'+title+'</div>' +
+      '<div class="menu-card">' + items.map(i=>
+        '<div class="menu-item"><span class="name">'+i.name+'<span class="desc">'+i.desc+'</span></span><span class="price">'+money(i.price)+'</span></div>'
+      ).join('') + '</div>';
+    }
+    return section('Burgers', MENU.burgers) + section('Sides', MENU.sides) + section('Drinks', MENU.drinks);
+  }
+
+  function hoursHTML(){
+    return '<div class="menu-card">' + HOURS.map(h=>
+      '<div class="menu-item"><span class="name">'+h[0]+'</span><span class="price" style="color:var(--slate)">'+h[1]+'</span></div>'
+    ).join('') + '</div>';
+  }
+
+  function locationsHTML(){
+    return '<div class="menu-card">' + LOCATIONS.map(l=>
+      '<div class="menu-item" style="flex-direction:column; align-items:flex-start;"><span class="name">'+l.area+'<span class="desc">'+l.address+' · '+l.phone+'</span></span></div>'
+    ).join('') + '</div>';
+  }
+
+  function allBurgerNames(){ return MENU.burgers.map(b=>b.name); }
+
+  function findBurger(text){
+    const t = text.toLowerCase();
+    return MENU.burgers.find(b => t.includes(b.name.toLowerCase())) || null;
+  }
+
+  function startOrderFlow(){
+    state = { step:'choose-burger', order:{} };
+    showTyping(()=>{
+      addMessage("Great choice. Which burger would you like to order?", 'bot');
+      setQuickReplies(allBurgerNames());
+    });
+  }
+
+  function resetQuickReplies(){
+    setQuickReplies(["View menu", "Store hours", "Order a burger", "Locations", "Talk to a person"]);
+  }
+
+  function botReply(userText){
+    const text = userText.trim();
+    const lower = text.toLowerCase();
+
+    // ---- active order flow takes priority ----
+    if(state.step === 'choose-burger'){
+      const burger = findBurger(text);
+      if(burger){
+        state.order.burger = burger;
+        state.step = 'choose-qty';
+        showTyping(()=>{
+          addMessage(`${burger.name} — good pick. How many would you like?`, 'bot');
+          setQuickReplies(["1","2","3","4+"]);
+        });
+      } else {
+        showTyping(()=> {
+          addMessage("I didn't catch that one. Please pick a burger from the list below.", 'bot');
+          setQuickReplies(allBurgerNames());
+        });
+      }
+      return;
+    }
+
+    if(state.step === 'choose-qty'){
+      const qty = parseInt(text) || (lower.includes('4') ? 4 : null);
+      if(qty && qty > 0 && qty < 20){
+        state.order.qty = qty;
+        state.step = 'choose-fulfillment';
+        showTyping(()=>{
+          addMessage("Would you like pickup or delivery?", 'bot');
+          setQuickReplies(["Pickup","Delivery"]);
+        });
+      } else {
+        showTyping(()=>{
+          addMessage("Please enter a quantity between 1 and 19.", 'bot');
+          setQuickReplies(["1","2","3","4"]);
+        });
+      }
+      return;
+    }
+
+    if(state.step === 'choose-fulfillment'){
+      if(lower.includes('pick') || lower.includes('deliv')){
+        state.order.fulfillment = lower.includes('pick') ? 'Pickup' : 'Delivery';
+        state.step = 'ask-name';
+        showTyping(()=>{
+          addMessage("What name should I put the order under?", 'bot');
+          setQuickReplies([]);
+        });
+      } else {
+        showTyping(()=>{
+          addMessage("Just to confirm — pickup or delivery?", 'bot');
+          setQuickReplies(["Pickup","Delivery"]);
+        });
+      }
+      return;
+    }
+
+    if(state.step === 'ask-name'){
+      state.order.name = text;
+      const o = state.order;
+      const total = (o.burger.price * o.qty).toFixed(2);
+      const orderNo = 'BH-' + Math.floor(1000 + Math.random()*9000);
+      state.step = 'idle';
+      showTyping(()=>{
+        addMessage(
+          `Order confirmed for ${o.name}.`,
+          'bot',
+          `<div class="menu-card">
+            <div class="menu-item"><span class="name">${o.qty} × ${o.burger.name}</span><span class="price">${money(o.burger.price*o.qty)}</span></div>
+            <div class="menu-item"><span class="name">${o.fulfillment}</span><span class="price" style="color:var(--slate)">${o.fulfillment==='Pickup' ? '15–20 min' : '30–40 min'}</span></div>
+            <div class="menu-item"><span class="name">Order number</span><span class="price">${orderNo}</span></div>
+            <div class="menu-item"><span class="name">Total</span><span class="price">$${total}</span></div>
+          </div>`
+        );
+        resetQuickReplies();
+      }, 700);
+      return;
+    }
+
+    // ---- general intents ----
+    if(/menu|what.*burger|food/.test(lower)){
+      showTyping(()=>{ addMessage("Here's what's on the menu today:", 'bot', menuHTML()); resetQuickReplies(); });
+      return;
+    }
+    if(/hour|open|close|time/.test(lower)){
+      showTyping(()=>{ addMessage("Here are our hours:", 'bot', hoursHTML()); resetQuickReplies(); });
+      return;
+    }
+    if(/location|address|where|store/.test(lower)){
+      showTyping(()=>{ addMessage("You can find us here:", 'bot', locationsHTML()); resetQuickReplies(); });
+      return;
+    }
+    if(/order|buy|want a|get a/.test(lower)){
+      startOrderFlow();
+      return;
+    }
+    if(/human|agent|person|help me talk/.test(lower)){
+      showTyping(()=>{
+        addMessage("Sure — I'll connect you with a team member. You can also call your nearest location directly:", 'bot', locationsHTML());
+        resetQuickReplies();
+      });
+      return;
+    }
+    if(/hi|hello|hey/.test(lower)){
+      showTyping(()=>{
+        addMessage("Hey there! Welcome to Burgers House. What can I get started for you?", 'bot');
+        resetQuickReplies();
+      });
+      return;
+    }
+    if(/thank/.test(lower)){
+      showTyping(()=>{ addMessage("Anytime — enjoy your meal!", 'bot'); resetQuickReplies(); });
+      return;
+    }
+
+    showTyping(()=>{
+      addMessage("I can help with the menu, hours, locations, or placing an order. What would you like to do?", 'bot');
+      resetQuickReplies();
+    });
+  }
+
+  function handleUserInput(text){
+    if(!text.trim()) return;
+    addMessage(text, 'user');
+    quickReplies.innerHTML = '';
+    botReply(text);
+  }
+
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const val = input.value;
+    input.value = '';
+    handleUserInput(val);
+  });
+
+  // ---- welcome ----
+  showTyping(()=>{
+    addMessage("Welcome to Burgers House! I'm your order assistant — ask me about the menu, hours, locations, or place an order right here.", 'bot');
+    resetQuickReplies();
+  }, 400);
+
+})();
+</script>
+</body>
+</html>
